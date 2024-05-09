@@ -1,5 +1,5 @@
 use calamine::{open_workbook_auto, DataType, Reader};
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Duration, NaiveDate};
 use std::env;
 use webbrowser;
 
@@ -57,12 +57,11 @@ fn main() {
 
 // the title
 fn format_text(row: &[DataType]) -> String {
-    let calendar_entry = row[CALENDAR_ENTRY].to_string(); // Assuming first column is Calendar Entry
+    let calendar_entry = row[CALENDAR_ENTRY].to_string();
     url_encode(&calendar_entry)
 }
 
 fn format_details(row: &[DataType]) -> String {
-    // You would modify these indices based on your actual Excel structure
     let details = format!(
         "Job Name: {}%0ADue Date: {}%0ACust: {} {} {} {}%0ATask: {}%0ACoordination: {}%0AParts: {}%0AOnsite Contact: {} {}%0AGC Info: {} {}%0APermit #: {}%0AAddress: {}%0AWater Purveyor: {}%0APO #: {}%0ASame Day: {}%0AScheduled: {}%0ATravel: {}%0ADate Contacted: {}%0ANotes: {}%0A",
         row[JOB_NAME],           // Job Name
@@ -85,14 +84,29 @@ fn format_details(row: &[DataType]) -> String {
         row[SAME_DAY],           // Same Day
         row[SCHEDULED],          // Scheduled
         row[TRAVEL],             // Travel
-        row[0],     // Date Contacted
+        get_date_contacted(row),     // Date Contacted
         row[NOTES]               // Notes
     );
     url_encode(&details)
 }
 
+fn get_date_contacted(row: &[DataType]) -> String {
+    let serial = match row[DATE_CONTACTED] {
+        DataType::Float(x) => x - 2.0,
+        _ => return String::new(),
+    };
+    let start = NaiveDate::from_ymd(1900, 1, 1);
+    let date_option = start.checked_add_signed(Duration::days(serial as i64));
+
+    if let Some(date) = date_option {
+        format!("{}/{}/{}", date.month(), date.day(), date.year())
+    } else {
+        String::new()
+    }
+}
+
 fn format_dates(row: &[DataType]) -> String {
-    let date_str = &row[DATE_CONTACTED].to_string(); // Assuming fourth column is Date Contacted
+    let date_str = &row[DATE_CONTACTED].to_string();
     if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
         format!(
             "{:04}{:02}{:02}T000000Z/{:04}{:02}{:02}T010000Z",
@@ -109,13 +123,13 @@ fn format_dates(row: &[DataType]) -> String {
 }
 
 fn format_location(row: &[DataType]) -> String {
-    let address = &row[ADDRESS].to_string(); // Assuming fifth column is Address
+    let address = &row[ADDRESS].to_string();
     url_encode(address)
 }
 
 fn generate_calendar_url(text: &str, details: &str, dates: &str, location: &str) -> String {
     format!(
-        "https://calendar.google.com/calendar/u/0/r/eventedit?text={}&details={}&dates={}&location={}&recur=RRULE:FREQ=WEEKLY;UNTIL=20251231T000000Z&ctz=America/Phoenix",
+        "https://calendar.google.com/calendar/u/0/r/eventedit?text={}&details={}&dates={}&location={}&recur=RRULE:FREQ=WEEKLY;UNTIL=99991231T000000Z&ctz=America/Phoenix",
         text, details, dates, location
     )
 }
