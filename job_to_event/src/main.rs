@@ -85,14 +85,14 @@ fn format_details(row: &[DataType]) -> String {
         row[SAME_DAY],           // Same Day
         row[SCHEDULED],          // Scheduled
         row[TRAVEL],             // Travel
-        row[DATE_CONTACTED],     // Date Contacted
+        row[0],     // Date Contacted
         row[NOTES]               // Notes
     );
     url_encode(&details)
 }
 
 fn format_dates(row: &[DataType]) -> String {
-    let date_str = &row[3].to_string(); // Assuming fourth column is Date Contacted
+    let date_str = &row[DATE_CONTACTED].to_string(); // Assuming fourth column is Date Contacted
     if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
         format!(
             "{:04}{:02}{:02}T000000Z/{:04}{:02}{:02}T010000Z",
@@ -109,7 +109,7 @@ fn format_dates(row: &[DataType]) -> String {
 }
 
 fn format_location(row: &[DataType]) -> String {
-    let address = &row[4].to_string(); // Assuming fifth column is Address
+    let address = &row[ADDRESS].to_string(); // Assuming fifth column is Address
     url_encode(address)
 }
 
