@@ -109,7 +109,7 @@ fn format_dates(row: &[DataType]) -> String {
     let date_str = &row[DATE_CONTACTED].to_string();
     if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
         format!(
-            "{:04}{:02}{:02}T000000Z/{:04}{:02}{:02}T010000Z",
+            "{:04}{:02}{:02}T090000Z/{:04}{:02}{:02}T093000Z",
             date.year(),
             date.month(),
             date.day(),
@@ -129,7 +129,7 @@ fn format_location(row: &[DataType]) -> String {
 
 fn generate_calendar_url(text: &str, details: &str, dates: &str, location: &str) -> String {
     format!(
-        "https://calendar.google.com/calendar/u/0/r/eventedit?text={}&details={}&dates={}&location={}&recur=RRULE:FREQ=WEEKLY;UNTIL=99991231T000000Z&ctz=America/Phoenix",
+        "https://calendar.google.com/calendar/u/0/r/eventedit?text={}&details={}&dates={}&location={}&ctz=America/Phoenix",
         text, details, dates, location
     )
 }
