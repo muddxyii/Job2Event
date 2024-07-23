@@ -106,19 +106,36 @@ fn get_date_contacted(row: &[DataType]) -> String {
 }
 
 fn format_dates(row: &[DataType]) -> String {
-    let date_str = &row[DATE_CONTACTED].to_string();
-    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-        format!(
-            "{:04}{:02}{:02}T090000Z/{:04}{:02}{:02}T093000Z",
-            date.year(),
-            date.month(),
-            date.day(),
-            date.year(),
-            date.month(),
-            date.day()
-        )
-    } else {
-        String::new()
+    match &row[DUE_DATE] {
+        DataType::String(date_str) => {
+            // Assuming the date format in Excel is "M/D/YYYY" or "MM/DD/YYYY"
+            let date = NaiveDate::parse_from_str(date_str, "%m/%d/%Y")
+                .or_else(|_| NaiveDate::parse_from_str(date_str, "%-m/%-d/%Y"))
+                .unwrap_or_else(|_| chrono::Local::now().naive_local().date());
+
+            format!(
+                "{:04}{:02}{:02}T140000Z/{:04}{:02}{:02}T143000Z",
+                date.year(),
+                date.month(),
+                date.day(),
+                date.year(),
+                date.month(),
+                date.day()
+            )
+        },
+        _ => {
+            // If DUE_DATE is not a string, use today's date
+            let date = chrono::Local::now().naive_local().date();
+            format!(
+                "{:04}{:02}{:02}T140000Z/{:04}{:02}{:02}T143000Z",
+                date.year(),
+                date.month(),
+                date.day(),
+                date.year(),
+                date.month(),
+                date.day()
+            )
+        }
     }
 }
 
