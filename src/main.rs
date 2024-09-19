@@ -1,4 +1,4 @@
-use calamine::{open_workbook_auto, DataType, Reader};
+use calamine::{open_workbook_auto, Data, Reader};
 use chrono::{Datelike, Duration, NaiveDate};
 use std::env;
 use webbrowser;
@@ -56,12 +56,12 @@ fn main() {
 }
 
 // the title
-fn format_text(row: &[DataType]) -> String {
+fn format_text(row: &[Data]) -> String {
     let calendar_entry = row[CALENDAR_ENTRY].to_string();
     url_encode(&calendar_entry)
 }
 
-fn format_details(row: &[DataType]) -> String {
+fn format_details(row: &[Data]) -> String {
     let details = format!(
         "Job Name: {}%0ADue Date: {}%0ACust: {} {} {} {}%0ATask: {}%0ACoordination: {}%0AParts: {}%0AOnsite Contact: {} {}%0AGC Info: {} {}%0APermit #: {}%0AAddress: {}%0AWater Purveyor: {}%0APO #: {}%0ASame Day: {}%0AScheduled: {}%0ATravel: {}%0ADate Contacted: {}%0ANotes: {}%0A",
         row[JOB_NAME],           // Job Name
@@ -90,12 +90,12 @@ fn format_details(row: &[DataType]) -> String {
     url_encode(&details)
 }
 
-fn get_date_contacted(row: &[DataType]) -> String {
+fn get_date_contacted(row: &[Data]) -> String {
     let serial = match row[DATE_CONTACTED] {
-        DataType::Float(x) => x - 2.0,
+        Data::Float(x) => x - 2.0,
         _ => return String::new(),
     };
-    let start = NaiveDate::from_ymd(1900, 1, 1);
+    let start = NaiveDate::from_ymd_opt(1900, 1, 1).expect("Invalid date");
     let date_option = start.checked_add_signed(Duration::days(serial as i64));
 
     if let Some(date) = date_option {
@@ -105,9 +105,9 @@ fn get_date_contacted(row: &[DataType]) -> String {
     }
 }
 
-fn format_dates(row: &[DataType]) -> String {
+fn format_dates(row: &[Data]) -> String {
     match &row[DUE_DATE] {
-        DataType::String(date_str) => {
+        Data::String(date_str) => {
             // Assuming the date format in Excel is "M/D/YYYY" or "MM/DD/YYYY"
             let date = NaiveDate::parse_from_str(date_str, "%m/%d/%Y")
                 .or_else(|_| NaiveDate::parse_from_str(date_str, "%-m/%-d/%Y"))
@@ -139,7 +139,7 @@ fn format_dates(row: &[DataType]) -> String {
     }
 }
 
-fn format_location(row: &[DataType]) -> String {
+fn format_location(row: &[Data]) -> String {
     let address = &row[ADDRESS].to_string();
     url_encode(address)
 }
