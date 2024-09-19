@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 calamine = "0.16.2"
 chrono = "0.4"
-webbrowser = "0.6"
+webbrowser = "0.8"
