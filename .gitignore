@@ -1,5 +1,2 @@
-job_to_event/target
-job_to_event/target/debug
-job_to_event/Cargo.lock
-
-python/output
+/target
+/.idea
