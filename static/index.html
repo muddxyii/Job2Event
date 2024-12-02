@@ -109,9 +109,15 @@
             const response = await fetch('/api/event-data');
             const data = await response.json();
 
-            // Format current date/time for datetime-local input
             const now = new Date();
-            const dateTimeLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            const minutes = now.getMinutes();
+            const roundedMinutes = minutes <= 30 ? 30 : 60;
+            const roundedDate = new Date(now.setMinutes(roundedMinutes, 0, 0));
+
+            // Format for datetime-local input
+            const dateTimeLocal = new Date(roundedDate.getTime() - roundedDate.getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16);
 
             document.getElementById('title').value = data.title;
             document.getElementById('eventDate').value = dateTimeLocal;
