@@ -1,9 +1,11 @@
-mod calendar_event;
-
 use calamine::{open_workbook_auto, Data, Reader};
 use std::env;
+
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_files as fs;
 use webbrowser;
-use crate::calendar_event::CalendarEvent;
+
+use serde::Serialize;
 
 const DATE_CONTACTED: usize = 0;
 const TASK: usize = 1;
@@ -29,39 +31,74 @@ const PARTS: usize = 20;
 const NOTES: usize = 21;
 const CALENDAR_ENTRY: usize = 22;
 
-fn main() {
+
+
+#[derive(Serialize)]
+pub struct CalendarEvent {
+    pub title: String,
+    pub description: String,
+    pub address: String,
+}
+
+#[get("/api/event-data")]
+async fn get_event_data() -> impl Responder {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        println!("Usage: cargo run <file_path> <row_number>");
-        std::process::exit(1);
-    }
+    let event = if args.len() >= 3 {
+        let file_path = &args[1];
+        let row_num: usize = args[2].parse().unwrap_or(1);
 
-    let file_path = &args[1];
-    let row_num: usize = args[2].parse().expect("Row number must be an integer");
+        let mut workbook = open_workbook_auto(file_path).unwrap_or_else(|_| panic!("Cannot open file"));
+        let sheet = workbook.worksheet_range_at(0).unwrap().unwrap();
 
-    let mut workbook = open_workbook_auto(file_path).expect("Cannot open file");
-    let sheet = workbook
-        .worksheet_range_at(0)
-        .expect("Cannot find sheet")
-        .expect("Error reading sheet");
+        if let Some(row) = sheet.rows().nth(row_num - 1) {
+            CalendarEvent {
+                title: row[CALENDAR_ENTRY].to_string(),
+                description: format_details(row),
+                address: row[ADDRESS].to_string()
+            }
+        } else {
+            CalendarEvent {
+                title: "Default Event".to_string(),
+                description: "No data found".to_string(),
+                address: "".to_string()
+            }
+        }
+    } else {
+        CalendarEvent {
+            title: "Default Event".to_string(),
+            description: "No file provided".to_string(),
+            address: "".to_string()
+        }
+    };
 
-    if let Some(row) = sheet.rows().nth(row_num - 1) {
-        let event = CalendarEvent::create(
-          row[CALENDAR_ENTRY].to_string(),
-          format_details(row),
-          row[ADDRESS].to_string()
-        );
+    web::Json(event)
+}
 
-        let url = event.generate_url();
+#[get("/")]
+async fn index() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(include_str!("../static/index.html"))
+}
 
-        println!("Opening URL: {}", url);
-        webbrowser::open(&url).expect("Failed to open URL");
-    }
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let server = HttpServer::new(|| {
+        App::new()
+            .service(index)
+            .service(get_event_data)
+            .service(fs::Files::new("/static", "static").show_files_listing())
+    })
+        .bind("127.0.0.1:8080")?;
+
+    webbrowser::open("http://localhost:8080/").expect("Failed to open URL");
+
+    server.run().await
 }
 
 fn format_details(row: &[Data]) -> String {
     format!(
-        "Job Name: {}%0ADue Date: {}%0ACust: {} {} {} {}%0ATask: {}%0ACoordination: {}%0AParts: {}%0AOnsite Contact: {} {}%0AGC Info: {} {}%0APermit #: {}%0AAddress: {}%0AWater Purveyor: {}%0APO #: {}%0ASame Day: {}%0AScheduled: {}%0ATravel: {}%0ADate Contacted: {}%0ANotes: {}%0A",
+        "Job Name: {}\nDue Date: {}\nCust: {} {} {} {}\nTask: {}\nCoordination: {}\nParts: {}\nOnsite Contact: {} {}\nGC Info: {} {}\nPermit #: {}\nAddress: {}\nWater Purveyor: {}\nPO #: {}\nSame Day: {}\nScheduled: {}\nTravel: {}\nDate Contacted: {}\nNotes: {}\n",
         row[JOB_NAME],           // Job Name
         row[DUE_DATE],           // Due Date
         row[BILLING_FIRST_NAME], // Cust
