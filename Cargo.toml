@@ -9,3 +9,5 @@ webbrowser = "1.0.3"
 actix-web = "4.9.0"
 actix-files = "0.6.6"
 serde = { version = "1.0.215", features = ["derive"] }
+tokio = "1.41.1"
+sysinfo = "0.32.1"
