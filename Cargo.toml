@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-calamine = "0.25.0"
+calamine = "0.26.1"
 chrono = "0.4.38"
 webbrowser = "1.0.2"
