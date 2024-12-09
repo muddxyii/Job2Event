@@ -1,51 +1,25 @@
 // Standard library imports
-use std::env;
-use std::fmt::{Display, Formatter};
-use std::net::TcpListener;
+use std::{
+    env,
+    fmt::{Display, Formatter},
+    net::TcpListener,
+};
 
-// Date/Time handling
-use chrono::{Datelike, Duration, NaiveDate};
-
-// Excel file reading
-use calamine::{open_workbook_auto, Data, Reader};
-
-// Web server and routing
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+// External crates
 use actix_files as fs;
-
-// Platform integration
-use webbrowser;
-use sysinfo::System;
-
-// Async utilities
-use tokio::time::sleep;
-
-// Serialization
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use calamine::{open_workbook_auto, Data, Reader};
+use chrono::{Datelike, Duration, NaiveDate};
 use serde::Serialize;
+use sysinfo::System;
+use tokio::time::sleep;
+use webbrowser;
 
-const DATE_CONTACTED: usize = 0;
-const TASK: usize = 1;
-const SAME_DAY: usize = 2;
-const SCHEDULED: usize = 3;
-const TRAVEL: usize = 4;
-const JOB_NAME: usize = 5;
-const ADDRESS: usize = 6;
-const BILLING_FIRST_NAME: usize = 7;
-const BILLING_LAST_NAME: usize = 8;
-const BILLING_COMPANY: usize = 9;
-const PHONE_NUMBER: usize = 10;
-const ON_SITE_CONTACT: usize = 11;
-const ON_SITE_NUMBER: usize = 12;
-const GC_NAME: usize = 13;
-const GC_NUMBER: usize = 14;
-const PERMIT_NUMBER: usize = 15;
-const PO_NUMBER: usize = 16;
-const WATER_PURVEYOR: usize = 17;
-const DUE_DATE: usize = 18;
-const COORDINATION: usize = 19;
-const PARTS: usize = 20;
-const NOTES: usize = 21;
-const CALENDAR_ENTRY: usize = 22;
+// Local modules
+mod constants;
+use constants::*;
+
+const SERVER_ADDR: &str = "127.0.0.1:8080";
 
 #[derive(Serialize)]
 pub struct CalendarEvent {
@@ -135,7 +109,7 @@ fn kill_other_instances() {
 async fn main() -> std::io::Result<()> {
     // Clear previous instances of Job2Event
     kill_other_instances();
-    if TcpListener::bind("127.0.0.1:8080").is_err() {
+    if TcpListener::bind(SERVER_ADDR).is_err() {
         println!("Port 8080 is in use. Waiting for other instance to close...");
         sleep(std::time::Duration::from_secs(2)).await;
     } else {
@@ -150,7 +124,7 @@ async fn main() -> std::io::Result<()> {
             .service(fs::Files::new("/static", "static").show_files_listing())
             .service(web::resource("/exit").route(web::post().to(exit)))
     })
-        .bind("127.0.0.1:8080")?;
+        .bind(SERVER_ADDR)?;
 
     println!("Created new instance at http://localhost:8080/");
     webbrowser::open("http://localhost:8080/").expect("Failed to open URL");
