@@ -89,6 +89,16 @@ async fn get_event_data() -> impl Responder {
     web::Json(event)
 }
 
+async fn exit() -> HttpResponse {
+    // Schedule the exit after sending response
+    actix_web::rt::spawn(async {
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        std::process::exit(0);
+    });
+
+    HttpResponse::Ok().finish()
+}
+
 #[get("/")]
 async fn index() -> impl Responder {
     HttpResponse::Ok()
@@ -125,6 +135,7 @@ async fn main() -> std::io::Result<()> {
             .service(index)
             .service(get_event_data)
             .service(fs::Files::new("/static", "static").show_files_listing())
+            .service(web::resource("/exit").route(web::post().to(exit)))
     })
         .bind("127.0.0.1:8080")?;
 

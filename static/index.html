@@ -148,11 +148,17 @@
             const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(address)}&dates=${dateObj.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}/${endDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`;
 
             document.getElementById('calendar-link').innerHTML = `
-                    <a target="_blank" href="${calendarUrl}">
-                        <img src="https://www.google.com/calendar/images/ext/gc_button1_en.gif" alt="Add to Google Calendar">
-                    </a>
-                `;
+            <a href="${calendarUrl}" onclick="handleCalendarClick(event, '${calendarUrl}')">
+                <img src="https://www.google.com/calendar/images/ext/gc_button1_en.gif" alt="Add to Google Calendar">
+            </a>
+        `;
         }
+    }
+
+    async function handleCalendarClick(event, calendarUrl) {
+        event.preventDefault();
+        await fetch('/exit', { method: 'POST' });
+        window.location.href = calendarUrl;
     }
 </script>
 </body>
