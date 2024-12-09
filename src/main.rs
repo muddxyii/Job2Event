@@ -1,13 +1,26 @@
-use calamine::{open_workbook_auto, Data, Reader};
+// Standard library imports
 use std::env;
 use std::fmt::{Display, Formatter};
 use std::net::TcpListener;
+
+// Date/Time handling
+use chrono::{Datelike, Duration, NaiveDate};
+
+// Excel file reading
+use calamine::{open_workbook_auto, Data, Reader};
+
+// Web server and routing
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use actix_files as fs;
+
+// Platform integration
 use webbrowser;
+use sysinfo::System;
+
+// Async utilities
 use tokio::time::sleep;
-use std::time::Duration;
-use sysinfo::{System};
+
+// Serialization
 use serde::Serialize;
 
 const DATE_CONTACTED: usize = 0;
@@ -124,7 +137,7 @@ async fn main() -> std::io::Result<()> {
     kill_other_instances();
     if TcpListener::bind("127.0.0.1:8080").is_err() {
         println!("Port 8080 is in use. Waiting for other instance to close...");
-        sleep(Duration::from_secs(2)).await;
+        sleep(std::time::Duration::from_secs(2)).await;
     } else {
         println!("Port 8080 is not in use. Creating new instance...");
     }
@@ -168,7 +181,28 @@ fn format_details(row: &[Data]) -> String {
         row[SAME_DAY],           // Same Day
         row[SCHEDULED],          // Scheduled
         row[TRAVEL],             // Travel
-        row[DATE_CONTACTED],     // Date Contacted
+        get_date_contacted(row),     // Date Contacted
         row[NOTES]               // Notes
     )
+}
+
+fn get_date_contacted(row: &[Data]) -> String {
+    let serial = match &row[DATE_CONTACTED] {
+        Data::String(s) => match s.parse::<f64>() {
+            Ok(x) => x,
+            Err(_) => return String::new(),
+        },
+        Data::Float(x) => *x,
+        Data::DateTime(dt) => dt.as_f64() - 1.0,
+        _ => return String::new(),
+    };
+
+    let start = NaiveDate::from_ymd_opt(1899, 12, 31).expect("Invalid date");
+    let date_option = start.checked_add_signed(Duration::days(serial as i64));
+
+    if let Some(date) = date_option {
+        format!("{}/{}/{}", date.month(), date.day(), date.year())
+    } else {
+        String::new()
+    }
 }
